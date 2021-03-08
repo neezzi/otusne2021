@@ -297,5 +297,189 @@ Fa0/23, Fa0/24, Gig0/1, Gig0/2
 
   </details>
   
+### 3 Настройка 802.1q транк на обоих коммутаторах
+##### 3.1.a Настроим порты fa0/1 на обоих свичах в транк
+
+   <details>
+<summary>S1</summary>
+
+```  
+S1(config)#interface fa0/1
+S1(config-if)#switchport mode trunk
+```
+
+  </details>
   
+  ##### 3.1.b Установим vlan 8 как native на обоих портах, разрешим прохождение vlan 3,4,8 в trunk
   
+   <details>
+<summary>S1</summary>
+
+```  
+S1(config-if)#switchport trunk native vlan 8
+S1(config-if)#switchport trunk allowed vlan 3,4,8
+```
+
+  </details>
+  
+   <details>
+<summary>S2</summary>
+
+```  
+S2(config-if)#switchport trunk native vlan 8
+S2(config-if)#switchport trunk allowed vlan 3,4,8
+```
+
+  </details>
+  
+##### 3.1.c Проверим, используя команду show interfaces trunk
+
+   <details>
+<summary>S1</summary>
+
+```  
+S1#show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Fa0/1 on 802.1q trunking 8
+
+Port Vlans allowed on trunk
+Fa0/1 3-4,8
+
+Port Vlans allowed and active in management domain
+Fa0/1 3,4,8
+
+Port Vlans in spanning tree forwarding state and not pruned
+Fa0/1 3,4,8
+
+```
+
+  </details>
+  
+   <details>
+<summary>S2</summary>
+
+```  
+S2#show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Fa0/1 on 802.1q trunking 8
+
+Port Vlans allowed on trunk
+Fa0/1 3-4,8
+
+Port Vlans allowed and active in management domain
+Fa0/1 3,4,8
+
+Port Vlans in spanning tree forwarding state and not pruned
+Fa0/1 3,4,8
+
+```
+
+  </details>
+  
+  ##### 3.2 Настроить fa0/5 S1 по аналогии с fa0/1, сохранить конфигурацию, проверим командой show interfaces trunk 
+  
+   <details>
+<summary>S1</summary>
+
+```  
+S1(config)#interface fa0/5
+S1(config-if)#switchport mode trunk
+S1(config-if)#switchport trunk native vlan 8
+S1(config-if)#switchport trunk allowed vlan 3,4,8
+
+S1#copy running-config startup-config
+S2#copy running-config startup-config 
+
+S1#show interfaces trunk
+Port Mode Encapsulation Status Native vlan
+Fa0/1 on 802.1q trunking 8
+Port Vlans allowed on trunk
+Fa0/1 3-4,8
+Port Vlans allowed and active in management domain
+Fa0/1 3,4,8
+Port Vlans in spanning tree forwarding state and not pruned
+Fa0/1 3,4,8
+
+```
+
+  </details>
+  
+ Fa0/5 не отображается в выводе команды, так как интерфейс gi0/0/1 на R1 в состоянии down
+ 
+ ### 4 Настройка межвлановой маршрутизации на R1
+ ##### 4.1 Поднять gi0/0/1, настроить сабинтерфейсы согласно таблицы
+ 
+   <details>
+<summary>R1</summary>
+
+```  
+R1(config)#interface gigabitEthernet 0/0/1
+R1(config-if)#no shut
+
+R1(config)#interface gi0/0/1.3
+R1(config-subif)#description Management
+R1(config-subif)#encapsulation dot1Q 3
+R1(config-subif)#ip address 192.168.3.1 255.255.255.0
+
+R1(config-subif)#interface gi0/0/1.4
+R1(config-subif)#description Operations
+R1(config-subif)#encapsulation dot1Q 4
+R1(config-subif)#ip address 192.168.4.1 255.255.255.0
+
+R1(config-subif)#interface gi0/0/1.8
+R1(config-subif)#description Native
+R1(config-subif)#encapsulation dot1Q 8 Native
+```
+
+  </details>
+ 
+ ##### 4.2 Проверить командой show ip interfaces brief
+ 
+   <details>
+<summary>R1</summary>
+
+```  
+R1#show ip interface brief 
+Interface IP-Address OK? Method Status Protocol 
+GigabitEthernet0/0/0 unassigned YES unset administratively down down 
+GigabitEthernet0/0/1 unassigned YES unset up up 
+GigabitEthernet0/0/1.3 192.168.3.1 YES manual up up 
+GigabitEthernet0/0/1.4 192.168.4.1 YES manual up up 
+GigabitEthernet0/0/1.8 unassigned YES unset up up 
+Vlan1 unassigned YES unset administratively down down
+```
+
+</details>
+
+### 5 Проверить работу межвлановой маршрутизации
+##### 5.1 Проверка командой ping с PC0
+
+   <details>
+<summary>PC0 ping to gateway</summary>
+ 
+![gateway](https://user-images.githubusercontent.com/74641903/110294323-c2b61400-8000-11eb-86e2-e17b998c70e2.JPG)
+
+</details>
+
+   <details>
+<summary>PC0 ping to PC1</summary>
+
+![pc2](https://user-images.githubusercontent.com/74641903/110294334-c77ac800-8000-11eb-9720-5dce9cce6f3a.JPG)
+
+</details>
+
+   <details>
+<summary>PC0 ping to S2</summary>
+ 
+![S2](https://user-images.githubusercontent.com/74641903/110294352-cba6e580-8000-11eb-9924-8e4c40dca27c.JPG)
+
+</details>
+
+##### 5.2 Проверка командой tracert с PC1
+
+   <details>
+<summary>tracert PC1 to PC0</summary>
+ 
+![tracert](https://user-images.githubusercontent.com/74641903/110294692-3fe18900-8001-11eb-8156-d273cd4371a1.JPG)
+
+</details>
