@@ -485,6 +485,3 @@ Vlan1 unassigned YES unset administratively down down
 </details>
 
 
-## Заключение 
-Финальная схема с активными линками:
-![финал](https://user-images.githubusercontent.com/74641903/110295691-74097980-8002-11eb-8495-76a700df8abd.JPG)
