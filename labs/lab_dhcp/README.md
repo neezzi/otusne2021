@@ -49,9 +49,79 @@
 <summary>Задачи</summary>
   
 
-Part 1: Организовать сеть и провести базовую настройку устройств <br />
-Part 2: Настроить и проверить работу двух DHCPv4 серверов на  R1 <br />
-Part 3: Настроить и проверить работу  DHCP Relay на R2 
+Часть 1: Организовать сеть и провести базовую настройку устройств <br />
+Часть 2: Настроить и проверить работу двух DHCPv4 серверов на  R1 <br />
+Часть 3: Настроить и проверить работу  DHCP Relay на R2 
 
 
 </details>
+
+### Часть 1: Организовать сеть и провести базовую настройку устройств
+
+#### Шаг 1: Организовать схему адресации
+
+<details> 
+
+<summary>Условие</summary>
+Разбить 192.168.1.0/24 на 3 подсети по следующим параметрам: <br />
+a. “Подсеть A”, поддерживающая 58 хостов (the client VLAN at R1). <br />
+Подсеть A: 192.168.1.0/26 <br /> 
+<br />
+
+b. “Подсеть B”, поддерживающая 28 хостов (the management VLAN at R1). <br />
+Подсеть B: 192.168.1.64/27 <br />
+<br />
+
+c.“Подсеть C”, поддерживающая 12 хостов (the client network at R2). <br />
+Подсеть C: 192.168.1.96/28 <br />
+
+</details>
+
+#### Шаг 2: Подключить устройства согласно топологии
+#### Шаг 3: Провести базовую настройку R1 и R2
+
+<details>
+<summary>R1</summary>
+
+```
+Router(config)#hostname R1
+R1(config)#no ip domain lookup
+R1(config)#enable secret class
+R1(config)#line console 0
+R1(config-line)#password cisco
+R1(config-line)#login
+R1(config-line)#line vty 0 4
+R1(config-line)#password cisco
+R1(config-line)#login
+R1(config)#service password-encryption
+R1(config)#banner motd $ Only for authorized users $
+R1#clock set 16:01:00 04 April 2021
+R1#copy running-config startup-config
+
+```
+
+</details>
+
+<details>
+<summary>R2</summary>
+
+```
+Router(config)#hostname R1
+R2(config)#no ip domain lookup
+R2(config)#enable secret class
+R2(config)#line console 0
+R2(config-line)#password cisco
+R2(config-line)#login
+R2(config-line)#line vty 0 4
+R2(config-line)#password cisco
+R2(config-line)#login
+R2(config)#service password-encryption
+R2(config)#banner motd $ Only for authorized users $
+R2#clock set 16:01:00 04 April 2021
+R2#copy running-config startup-config
+
+```
+
+</details>
+
+
