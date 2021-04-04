@@ -335,3 +335,314 @@ S2(config-if-range)#exit
 ```
 
 </details>
+
+#### Шаг 8: Назначить VLANs правильным интерфесам S1
+
+<details>
+
+<summary>Перевести все неиспользуемые порты на S1 во VLAN Parking_Lot, настроить в access, выключить их. На S2 выключить все неиспользуемые порты</summary>
+
+```
+S1(config)#int e0/0
+S1(config-if)#switchport mode access
+S1(config-if)#switchport access vlan 100
+
+
+S1#show vlan brief
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Et0/1
+100  Clients                          active    Et0/0
+200  Management                       active
+999  Parking_lot                      active    Et0/2, Et0/3
+1000 Native                           active
+1002 fddi-default                     act/unsup
+1003 token-ring-default               act/unsup
+1004 fddinet-default                  act/unsup
+1005 trnet-default                    act/unsup
+
+
+
+```
+
+</details>
+
+#### Шаг 9: Настроить интерфейс e0/1 на S1 в trunk
+
+<details>
+
+<summary>S1</summary>
+
+```
+S1(config)#interface e0/1
+S1(config-if)#switchport mode trunk
+S1(config-if)#switchport trunk native vlan 1000
+S1(config-if)#switchport trunk allowed vlan 100,200,1000
+
+S1#sh int tru
+
+Port        Mode             Encapsulation  Status        Native vlan
+Et0/1       on               802.1q         trunking      1000
+
+Port        Vlans allowed on trunk
+Et0/1       100,200,1000
+
+Port        Vlans allowed and active in management domain
+Et0/1       100,200,1000
+
+Port        Vlans in spanning tree forwarding state and not pruned
+Et0/1       100,200,1000
+
+```
+
+</details>
+
+### Часть 2: Настроить и проверить работу двух DHCPv4 серверов на R1
+#### Шаг 1: Настройка согласно условий
+<details>
+
+<summary>R1</summary>
+
+```
+R1(config)#ip dhcp excluded-address 192.168.1.1 192.168.1.5
+R1(config)#ip dhcp pool dhcp_1
+R1(dhcp-config)#network 192.168.1.0 255.255.255.192
+R1(dhcp-config)#domain-name ccna-lab.com
+R1(dhcp-config)#default-router 192.168.1.1
+R1(dhcp-config)#lease 2 12 30
+
+
+R1(config)#ip dhcp excluded-address 192.168.1.97 192.168.1.101
+R1(config)#ip dhcp pool dhcp_2
+R1(dhcp-config)#network 192.168.1.96 255.255.255.240
+R1(dhcp-config)#default-router 192.168.1.97
+R1(dhcp-config)#domain-name ccna-lab.com
+R1(dhcp-config)#lease 2 12 30
+
+
+```
+
+</details>
+
+#### Шаг 2: Сохранить конфигурацию
+#### Шаг 3: Проверить конфигурацию
+
+<details>
+
+<summary>R1</summary>
+
+```
+R1#show ip dhcp pool
+
+Pool dhcp_1 :
+ Utilization mark (high/low)    : 100 / 0
+ Subnet size (first/next)       : 0 / 0
+ Total addresses                : 62
+ Leased addresses               : 0
+ Pending event                  : none
+ 1 subnet is currently in the pool :
+ Current index        IP address range                    Leased addresses
+ 192.168.1.1          192.168.1.1      - 192.168.1.62      0
+
+Pool dhcp_2 :
+ Utilization mark (high/low)    : 100 / 0
+ Subnet size (first/next)       : 0 / 0
+ Total addresses                : 14
+ Leased addresses               : 0
+ Pending event                  : none
+ 1 subnet is currently in the pool :
+ Current index        IP address range                    Leased addresses
+ 192.168.1.97         192.168.1.97     - 192.168.1.110     0
+
+
+R1#show ip dhcp server statistics
+Memory usage         25161
+Address pools        2
+Database agents      0
+Automatic bindings   0
+Manual bindings      0
+Expired bindings     0
+Malformed messages   0
+Secure arp entries   0
+
+Message              Received
+BOOTREQUEST          0
+DHCPDISCOVER         0
+DHCPREQUEST          0
+DHCPDECLINE          0
+DHCPRELEASE          0
+DHCPINFORM           0
+
+Message              Sent
+BOOTREPLY            0
+DHCPOFFER            0
+DHCPACK              0
+DHCPNAK              0
+
+
+R1#show ip dhcp binding
+Bindings from all pools not associated with VRF:
+IP address          Client-ID/              Lease expiration        Type
+                    Hardware address/
+                    User name
+
+
+```
+
+</details>
+
+#### Шаг 4: Проверить получение IP по dhcp на PC-A
+
+<details>
+
+<summary>PC-A</summary>
+
+```
+VPCS> ip dhcp
+VPCS> show ip
+
+NAME        : VPCS[1]
+IP/MASK     : 192.168.1.6/26
+GATEWAY     : 192.168.1.1
+DNS         :
+DHCP SERVER : 192.168.1.1
+DHCP LEASE  : 217793, 217800/108900/190575
+DOMAIN NAME : ccna-lab.com
+MAC         : 00:50:79:66:68:05
+LPORT       : 20000
+RHOST:PORT  : 127.0.0.1:30000
+MTU         : 1500
+
+VPCS> ping 192.168.1.1
+
+84 bytes from 192.168.1.1 icmp_seq=1 ttl=255 time=0.315 ms
+84 bytes from 192.168.1.1 icmp_seq=2 ttl=255 time=0.499 ms
+84 bytes from 192.168.1.1 icmp_seq=3 ttl=255 time=0.458 ms
+84 bytes from 192.168.1.1 icmp_seq=4 ttl=255 time=0.492 ms
+84 bytes from 192.168.1.1 icmp_seq=5 ttl=255 time=0.437 ms
+```
+
+</details>
+
+### Часть 3: Настроить и проверить DHCP Relay на R2
+#### Шаг 1: ip helper-address с R2 e0/1 на IP адрес R1 e0/0 
+
+<details>
+<summary>R2</summary>
+
+```
+R2(config)#interface e0/1
+R2(config-if)#ip helper-address 10.0.0.1
+
+```
+
+</details>
+
+#### Шаг 2: Получить IP по dhcp на PC-B
+
+<details>
+<summary>PC-B</summary>
+
+```
+VPCS> ip dhcp
+DDORA IP 192.168.1.102/28 GW 192.168.1.97
+
+VPCS> show ip
+
+NAME        : VPCS[1]
+IP/MASK     : 192.168.1.102/28
+GATEWAY     : 192.168.1.97
+DNS         :
+DHCP SERVER : 10.0.0.1
+DHCP LEASE  : 217771, 217800/108900/190575
+DOMAIN NAME : ccna-lab.com
+MAC         : 00:50:79:66:68:06
+LPORT       : 20000
+RHOST:PORT  : 127.0.0.1:30000
+MTU         : 1500
+
+VPCS> ping 192.168.1.1
+
+84 bytes from 192.168.1.1 icmp_seq=1 ttl=254 time=0.520 ms
+84 bytes from 192.168.1.1 icmp_seq=2 ttl=254 time=0.610 ms
+84 bytes from 192.168.1.1 icmp_seq=3 ttl=254 time=0.620 ms
+84 bytes from 192.168.1.1 icmp_seq=4 ttl=254 time=0.675 ms
+84 bytes from 192.168.1.1 icmp_seq=5 ttl=254 time=0.642 ms
+
+```
+
+</details>
+
+#### Шаг 3: Вывод команд show ip dhcp binding на R1, show ip dhcp server statistics на R1 и R2
+
+<details>
+<summary>R1</summary>
+
+```
+R1#show ip dhcp binding
+Bindings from all pools not associated with VRF:
+IP address          Client-ID/              Lease expiration        Type
+                    Hardware address/
+                    User name
+192.168.1.6         0100.5079.6668.05       Apr 07 2021 11:11 AM    Automatic
+192.168.1.102       0100.5079.6668.06       Apr 07 2021 11:18 AM    Automatic
+
+R1#show ip dhcp server statistics
+Memory usage         42079
+Address pools        2
+Database agents      0
+Automatic bindings   2
+Manual bindings      0
+Expired bindings     0
+Malformed messages   0
+Secure arp entries   0
+
+Message              Received
+BOOTREQUEST          0
+DHCPDISCOVER         4
+DHCPREQUEST          2
+DHCPDECLINE          0
+DHCPRELEASE          0
+DHCPINFORM           0
+
+Message              Sent
+BOOTREPLY            0
+DHCPOFFER            2
+DHCPACK              2
+DHCPNAK              0
+```
+
+</details>
+
+<details>
+<summary>R2</summary>
+
+```
+R2#show ip dhcp server statistics
+Memory usage         22565
+Address pools        0
+Database agents      0
+Automatic bindings   0
+Manual bindings      0
+Expired bindings     0
+Malformed messages   0
+Secure arp entries   0
+
+Message              Received
+BOOTREQUEST          0
+DHCPDISCOVER         0
+DHCPREQUEST          0
+DHCPDECLINE          0
+DHCPRELEASE          0
+DHCPINFORM           0
+
+Message              Sent
+BOOTREPLY            0
+DHCPOFFER            0
+DHCPACK              0
+DHCPNAK              0
+
+```
+
+</details>
