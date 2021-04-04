@@ -368,6 +368,14 @@ VLAN Name                             Status    Ports
 
 </details>
 
+<details>
+
+<summary>Почему e0/1 отображается в 1 VLAN?</summary>
+
+e0/1 находится во влан по умолчанию не был настроен в trunk
+
+</details>
+
 #### Шаг 9: Настроить интерфейс e0/1 на S1 в trunk
 
 <details>
@@ -395,6 +403,13 @@ Port        Vlans in spanning tree forwarding state and not pruned
 Et0/1       100,200,1000
 
 ```
+
+</details>
+
+<details>
+
+<summary>На данном этапе, какой IP адрес бы получал ПК через dhcp?</summary>
+Link-local address, 169.254.x.x
 
 </details>
 
